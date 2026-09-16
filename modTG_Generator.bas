@@ -213,6 +213,11 @@ End Sub
 '-------------------------------------------------------------------------------
 ' Génère un seul fichier pour un OF donné.
 '
+' Les quatre feuilles du modèle peuvent être masquées ou xlSheetVeryHidden.
+' Leur état d'origine est sauvegardé, elles sont rendues visibles uniquement
+' pendant la copie, puis leur visibilité d'origine est immédiatement restaurée.
+' Les copies présentes dans le fichier généré sont toujours rendues visibles.
+'
 ' La fonction retourne True si le fichier a été généré correctement.
 ' Elle retourne False si une erreur s'est produite.
 '-------------------------------------------------------------------------------
@@ -242,21 +247,79 @@ Private Function GenerateOneOFFile( _
     Dim documentTitle As String
     Dim outputFileName As String
 
+    Dim templateSheetNames As Variant
+    Dim originalVisibility() As XlSheetVisibility
+    Dim templateSheetIndex As Long
+    Dim sourceVisibilityNeedsRestore As Boolean
+
     On Error GoTo GenerationError
 
     '---------------------------------------------------------------------------
     ' Copie uniquement les quatre feuilles devant apparaître dans le fichier
     ' final.
+    '
+    ' Les feuilles peuvent rester masquées dans le classeur modèle. Pour rendre
+    ' la copie robuste quel que soit leur état, on sauvegarde leur visibilité,
+    ' on les affiche temporairement, puis on restaure immédiatement leur état.
     '---------------------------------------------------------------------------
 
-    wbTemplate.Worksheets(Array( _
+    templateSheetNames = Array( _
         TG_SCREEN_VIEW_SHEET, _
         TG_INFORMATION_SHEET, _
         TG_TRACEABILITY_SHEET, _
         TG_HISTORY_SHEET _
-    )).Copy
+    )
+
+    ReDim originalVisibility( _
+        LBound(templateSheetNames) To UBound(templateSheetNames) _
+    )
+
+    For templateSheetIndex = _
+        LBound(templateSheetNames) To UBound(templateSheetNames)
+
+        originalVisibility(templateSheetIndex) = _
+            wbTemplate.Worksheets( _
+                CStr(templateSheetNames(templateSheetIndex)) _
+            ).Visible
+
+    Next templateSheetIndex
+
+    sourceVisibilityNeedsRestore = True
+
+    For templateSheetIndex = _
+        LBound(templateSheetNames) To UBound(templateSheetNames)
+
+        wbTemplate.Worksheets( _
+            CStr(templateSheetNames(templateSheetIndex)) _
+        ).Visible = xlSheetVisible
+
+    Next templateSheetIndex
+
+    wbTemplate.Worksheets(templateSheetNames).Copy
 
     Set wbOutput = ActiveWorkbook
+
+    ' Restaure immédiatement l'état des feuilles dans le classeur modèle.
+    For templateSheetIndex = _
+        LBound(templateSheetNames) To UBound(templateSheetNames)
+
+        wbTemplate.Worksheets( _
+            CStr(templateSheetNames(templateSheetIndex)) _
+        ).Visible = originalVisibility(templateSheetIndex)
+
+    Next templateSheetIndex
+
+    sourceVisibilityNeedsRestore = False
+
+    ' Les feuilles générées doivent être visibles dans le fichier final.
+    For templateSheetIndex = _
+        LBound(templateSheetNames) To UBound(templateSheetNames)
+
+        wbOutput.Worksheets( _
+            CStr(templateSheetNames(templateSheetIndex)) _
+        ).Visible = xlSheetVisible
+
+    Next templateSheetIndex
 
     Set wsInformation = _
         wbOutput.Worksheets(TG_INFORMATION_SHEET)
@@ -378,6 +441,21 @@ GenerationError:
         " - " & Err.Description
 
     On Error Resume Next
+
+    ' Même en cas d'erreur pendant la copie, le classeur modèle retrouve
+    ' toujours exactement l'état de visibilité qu'il avait au départ.
+    If sourceVisibilityNeedsRestore Then
+
+        For templateSheetIndex = _
+            LBound(templateSheetNames) To UBound(templateSheetNames)
+
+            wbTemplate.Worksheets( _
+                CStr(templateSheetNames(templateSheetIndex)) _
+            ).Visible = originalVisibility(templateSheetIndex)
+
+        Next templateSheetIndex
+
+    End If
 
     If Not wbOutput Is Nothing Then
         wbOutput.Close SaveChanges:=False
