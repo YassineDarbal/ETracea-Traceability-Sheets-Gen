@@ -47,6 +47,10 @@ Public Sub GenerateTraceabilityFiles()
 
     Set wbTemplate = ThisWorkbook
 
+    UpdateDashboardStatus _
+        messageText:="Validation des paramètres et préparation de la génération...", _
+        statusType:="RUNNING"
+
     ' Vérifie la structure du classeur modèle.
     ValidateTemplateWorkbook wbTemplate
 
@@ -69,6 +73,10 @@ Public Sub GenerateTraceabilityFiles()
 
     If orderedOFs.Count = 0 Then
 
+        UpdateDashboardStatus _
+            messageText:="Aucun OF détecté dans la feuille '" & TG_SOURCE_SHEET & "'.", _
+            statusType:="WARNING"
+
         MsgBox _
             Prompt:= _
                 "Aucun OF n'a été trouvé dans la colonne A de la feuille '" & _
@@ -80,6 +88,12 @@ Public Sub GenerateTraceabilityFiles()
         Exit Sub
 
     End If
+
+    UpdateDashboardStatus _
+        messageText:= _
+            CStr(orderedOFs.Count) & _
+            " OF détecté(s). Génération en cours...", _
+        statusType:="RUNNING"
 
     ' Sauvegarde les paramètres actuels d'Excel.
     previousCalculation = Application.Calculation
@@ -152,6 +166,14 @@ CleanExit:
 
     If failedCount = 0 Then
 
+        UpdateDashboardStatus _
+            messageText:= _
+                CStr(generatedCount) & _
+                " fichier(s) généré(s) avec succès." & _
+                vbCrLf & _
+                outputFolder, _
+            statusType:="SUCCESS"
+
         MsgBox _
             Prompt:= _
                 generatedCount & _
@@ -163,6 +185,14 @@ CleanExit:
             Title:="Génération terminée"
 
     Else
+
+        UpdateDashboardStatus _
+            messageText:= _
+                CStr(generatedCount) & _
+                " fichier(s) généré(s) - " & _
+                CStr(failedCount) & _
+                " fichier(s) en erreur.", _
+            statusType:="WARNING"
 
         MsgBox _
             Prompt:= _
@@ -199,6 +229,12 @@ FatalError:
         On Error GoTo 0
 
     End If
+
+    UpdateDashboardStatus _
+        messageText:= _
+            "La génération a été interrompue : " & _
+            GenerationError, _
+        statusType:="ERROR"
 
     MsgBox _
         Prompt:= _
