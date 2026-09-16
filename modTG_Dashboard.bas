@@ -544,7 +544,7 @@ Private Sub BuildPrimaryAction(ByVal ws As Worksheet)
         ws:=ws, _
         shapeName:="tg_btnClearOFs", _
         caption:="VIDER LES OFs", _
-        targetArea:=ws.Range("C14:C16"), _
+        targetArea:=ws.Range("C14:D15"), _
         macroName:="ClearOFs", _
         fillColor:=RGB(255, 255, 255), _
         fontColor:=RGB(183, 28, 28), _
@@ -555,7 +555,7 @@ Private Sub BuildPrimaryAction(ByVal ws As Worksheet)
         ws:=ws, _
         shapeName:="tg_btnGenerate", _
         caption:="GÉNÉRER LES FICHIERS", _
-        targetArea:=ws.Range("D14:H16"), _
+        targetArea:=ws.Range("F14:I15"), _
         macroName:="GenerateTraceabilityFiles", _
         fillColor:=RGB(30, 111, 140), _
         fontColor:=RGB(255, 255, 255), _
