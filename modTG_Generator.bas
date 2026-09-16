@@ -120,6 +120,22 @@ Public Sub GenerateTraceabilityFiles()
             ofIndex & " / " & orderedOFs.Count & _
             " - OF " & ofNumber
 
+        ' Met à jour le Dashboard à chaque OF.
+        ' ScreenUpdating est brièvement réactivé afin que le statut soit visible
+        ' immédiatement, puis désactivé pour préserver les performances.
+        Application.ScreenUpdating = True
+
+        UpdateDashboardStatus _
+            messageText:= _
+                "Génération en cours - " & _
+                CStr(ofIndex) & " / " & CStr(orderedOFs.Count) & _
+                vbCrLf & _
+                "OF " & ofNumber, _
+            statusType:="RUNNING"
+
+        DoEvents
+        Application.ScreenUpdating = False
+
         savedFilePath = vbNullString
         GenerationError = vbNullString
 
