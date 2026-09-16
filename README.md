@@ -33,6 +33,7 @@ The macro rebuilds the Dashboard with:
 - an output-folder input;
 - a `PARCOURIR` button using the Windows folder picker;
 - a primary `GÉNÉRER LES FICHIERS` button;
+- a secondary `VIDER LES OFs` button;
 - a status card updated by the generation workflow.
 
 If `TG_FileName` and `TG_OutputFolder` already exist, their current values are preserved before the Dashboard is rebuilt.
@@ -77,7 +78,21 @@ The Dashboard primary button is assigned automatically to:
 
 `GenerateTraceabilityFiles`
 
-The status card shows preparation, success, warning, and error messages. Detailed per-OF progress continues to be shown in the Excel status bar while the batch is running.
+The status card shows preparation, live per-OF progress (`current / total` plus the current OF number), success, warning, and error messages.
+
+## Clear loaded OF data
+
+The Dashboard secondary button is assigned automatically to:
+
+`ClearOFs`
+
+This action:
+
+- keeps rows 1 and 2 of `OFs` untouched;
+- deletes loaded rows starting from row 3 through the last used row;
+- asks for confirmation before deleting;
+- updates the Dashboard status after the sheet is cleared;
+- restores the previous Excel `ScreenUpdating` state after the operation.
 
 ## Hidden template sheets
 
@@ -151,13 +166,14 @@ Dashboard UI generation and interaction, including:
 
 - `BuildDashboard`;
 - `SelectOutputFolder`;
+- `ClearOFs`;
 - `UpdateDashboardStatus`;
 - automatic creation of the two workbook-scoped configuration names;
 - automatic button creation and macro assignment.
 
 ### `modTG_Generator.bas`
 
-Main generation workflow and per-OF workbook creation, including safe handling of hidden template sheets and Dashboard status updates.
+Main generation workflow and per-OF workbook creation, including safe handling of hidden template sheets and live Dashboard status updates.
 
 ## Versioning
 

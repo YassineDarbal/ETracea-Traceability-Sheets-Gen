@@ -3,10 +3,6 @@ Option Explicit
 
 '===============================================================================
 ' DASHBOARD ETRACEA
-'
-' Ce module construit l'interface utilisateur de la feuille Dashboard.
-' Il peut être relancé à tout moment : les valeurs des paramètres déjà définis
-' sont conservées avant reconstruction de l'interface.
 '===============================================================================
 
 Private Const TG_STATUS_READY As String = "READY"
@@ -18,8 +14,7 @@ Private Const TG_STATUS_ERROR As String = "ERROR"
 '-------------------------------------------------------------------------------
 ' Construit ou reconstruit complètement la feuille Dashboard.
 '
-' Les deux paramètres utilisateur sont créés comme noms définis de portée
-' classeur :
+' Les valeurs existantes des deux noms définis sont conservées :
 '   TG_FileName     -> Dashboard!F8
 '   TG_OutputFolder -> Dashboard!F10
 '-------------------------------------------------------------------------------
@@ -27,10 +22,8 @@ Public Sub BuildDashboard()
 
     Dim wb As Workbook
     Dim ws As Worksheet
-
     Dim fileNameValue As String
     Dim outputFolderValue As String
-
     Dim previousScreenUpdating As Boolean
 
     On Error GoTo BuildError
@@ -159,11 +152,129 @@ FolderError:
 End Sub
 
 '-------------------------------------------------------------------------------
+' Supprime toutes les lignes de la feuille OFs à partir de la ligne 3 incluse.
+' Les lignes 1 et 2 sont toujours conservées.
+'-------------------------------------------------------------------------------
+Public Sub ClearOFs()
+
+    Dim ws As Worksheet
+    Dim lastCell As Range
+    Dim lastRow As Long
+    Dim answer As VbMsgBoxResult
+    Dim previousScreenUpdating As Boolean
+    Dim clearErrorMessage As String
+
+    previousScreenUpdating = Application.ScreenUpdating
+
+    On Error GoTo ClearError
+
+    Set ws = ThisWorkbook.Worksheets(TG_SOURCE_SHEET)
+
+    Set lastCell = ws.Cells.Find( _
+        What:="*", _
+        After:=ws.Range("A1"), _
+        LookIn:=xlFormulas, _
+        LookAt:=xlPart, _
+        SearchOrder:=xlByRows, _
+        SearchDirection:=xlPrevious, _
+        MatchCase:=False _
+    )
+
+    If lastCell Is Nothing Then
+
+        UpdateDashboardStatus _
+            messageText:="La feuille OFs est déjà vide.", _
+            statusType:=TG_STATUS_READY
+
+        MsgBox _
+            Prompt:="La feuille '" & TG_SOURCE_SHEET & "' est déjà vide.", _
+            Buttons:=vbInformation, _
+            Title:="Nettoyage des OF"
+
+        Exit Sub
+
+    End If
+
+    lastRow = lastCell.Row
+
+    If lastRow < TG_FIRST_SOURCE_ROW Then
+
+        UpdateDashboardStatus _
+            messageText:="Aucune donnée OF à supprimer.", _
+            statusType:=TG_STATUS_READY
+
+        MsgBox _
+            Prompt:= _
+                "Aucune donnée à supprimer à partir de la ligne " & _
+                TG_FIRST_SOURCE_ROW & ".", _
+            Buttons:=vbInformation, _
+            Title:="Nettoyage des OF"
+
+        Exit Sub
+
+    End If
+
+    answer = MsgBox( _
+        Prompt:= _
+            "Voulez-vous supprimer toutes les lignes de la feuille '" & _
+            TG_SOURCE_SHEET & "' à partir de la ligne " & _
+            TG_FIRST_SOURCE_ROW & " ?" & _
+            vbCrLf & vbCrLf & _
+            "Cette action supprimera les données actuellement chargées.", _
+        Buttons:=vbYesNo + vbQuestion + vbDefaultButton2, _
+        Title:="Confirmer le nettoyage" _
+    )
+
+    If answer <> vbYes Then
+        Exit Sub
+    End If
+
+    Application.ScreenUpdating = False
+
+    ws.Rows( _
+        TG_FIRST_SOURCE_ROW & ":" & lastRow _
+    ).Delete Shift:=xlUp
+
+    Application.ScreenUpdating = previousScreenUpdating
+
+    UpdateDashboardStatus _
+        messageText:="La feuille OFs a été vidée. Vous pouvez charger un nouveau lot.", _
+        statusType:=TG_STATUS_READY
+
+    MsgBox _
+        Prompt:= _
+            "Les données de la feuille '" & TG_SOURCE_SHEET & _
+            "' ont été supprimées.", _
+        Buttons:=vbInformation, _
+        Title:="Nettoyage terminé"
+
+    Exit Sub
+
+ClearError:
+
+    clearErrorMessage = Err.Description
+
+    On Error Resume Next
+    Application.ScreenUpdating = previousScreenUpdating
+    On Error GoTo 0
+
+    UpdateDashboardStatus _
+        messageText:="Erreur pendant le nettoyage de la feuille OFs.", _
+        statusType:=TG_STATUS_ERROR
+
+    MsgBox _
+        Prompt:= _
+            "Impossible de vider la feuille '" & TG_SOURCE_SHEET & "'." & _
+            vbCrLf & vbCrLf & _
+            clearErrorMessage, _
+        Buttons:=vbCritical, _
+        Title:="Erreur de nettoyage"
+
+End Sub
+
+'-------------------------------------------------------------------------------
 ' Met à jour la zone de statut du Dashboard.
-'
 ' statusType : READY / RUNNING / SUCCESS / WARNING / ERROR
-' Cette procédure est volontairement tolérante : si le Dashboard n'existe pas,
-' elle quitte silencieusement afin de ne jamais bloquer la génération.
 '-------------------------------------------------------------------------------
 Public Sub UpdateDashboardStatus( _
     ByVal messageText As String, _
@@ -173,7 +284,6 @@ Public Sub UpdateDashboardStatus( _
     Dim ws As Worksheet
     Dim titleCell As Range
     Dim messageCell As Range
-
     Dim statusTitle As String
     Dim statusFill As Long
     Dim statusFont As Long
@@ -429,6 +539,17 @@ Private Sub BuildConfigurationCard( _
 End Sub
 
 Private Sub BuildPrimaryAction(ByVal ws As Worksheet)
+
+    CreateDashboardButton _
+        ws:=ws, _
+        shapeName:="tg_btnClearOFs", _
+        caption:="VIDER LES OFs", _
+        targetArea:=ws.Range("C14:C16"), _
+        macroName:="ClearOFs", _
+        fillColor:=RGB(255, 255, 255), _
+        fontColor:=RGB(183, 28, 28), _
+        borderColor:=RGB(183, 28, 28), _
+        fontSize:=10
 
     CreateDashboardButton _
         ws:=ws, _
