@@ -162,6 +162,9 @@ Public Sub ClearOFs()
     Dim lastRow As Long
     Dim answer As VbMsgBoxResult
     Dim previousScreenUpdating As Boolean
+    Dim clearErrorMessage As String
+
+    previousScreenUpdating = Application.ScreenUpdating
 
     On Error GoTo ClearError
 
@@ -226,7 +229,6 @@ Public Sub ClearOFs()
         Exit Sub
     End If
 
-    previousScreenUpdating = Application.ScreenUpdating
     Application.ScreenUpdating = False
 
     ws.Rows( _
@@ -250,6 +252,8 @@ Public Sub ClearOFs()
 
 ClearError:
 
+    clearErrorMessage = Err.Description
+
     On Error Resume Next
     Application.ScreenUpdating = previousScreenUpdating
     On Error GoTo 0
@@ -262,7 +266,7 @@ ClearError:
         Prompt:= _
             "Impossible de vider la feuille '" & TG_SOURCE_SHEET & "'." & _
             vbCrLf & vbCrLf & _
-            Err.Description, _
+            clearErrorMessage, _
         Buttons:=vbCritical, _
         Title:="Erreur de nettoyage"
 
