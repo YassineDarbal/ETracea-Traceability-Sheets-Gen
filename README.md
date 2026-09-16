@@ -41,7 +41,7 @@ Contains the destination directory for generated files.
 
 Example:
 
-`C:\Users\UP60012291\Gamme de Traçabilité DF`
+`C:\Users\User11\Gamme de Traçabilité DF`
 
 If the directory does not exist, the macro attempts to create it, including missing parent folders.
 
